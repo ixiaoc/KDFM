@@ -11,7 +11,7 @@ from collections import defaultdict
 
 import config
 from KDFM import DeepAFM
-from metrics import gini_norm, mse_norm
+from metrics import gini_norm, mse_norm, mse
 
 
 def load_data():
@@ -131,7 +131,7 @@ def load_embedding_from_file(embedding_file):
     embeddings = np.append(word2vec_embeddings, unknown_padding_embedding.astype(np.float32), axis=0)
     return embeddings
 
-def run_base_model_nfm(dfTrain, dfTest, folds, pnn_params):
+def run_base_model_nfm(dfTrain, dfTest, folds, kdfm_params):
     fd = FeatureDictionary(dfTrain=dfTrain,
                            dfTest=dfTest,
                            numeric_cols=config.NUMERIC_COLS,
@@ -150,18 +150,18 @@ def run_base_model_nfm(dfTrain, dfTest, folds, pnn_params):
     Xt_test, Xm_test = read_text_data(config.TEST_FILE, word2idx, config.num_unroll_steps)
 
 
-    pnn_params['feature_size_one_hot'] = fd.feat_dim
-    pnn_params['word_embeddings'] = load_embedding(config.embedding_size, filename=config.embedding_file)  # read data
+    kdfm_params['feature_size_one_hot'] = fd.feat_dim
+    kdfm_params['word_embeddings'] = load_embedding(config.embedding_size, filename=config.embedding_file)  # read data
 
     #TODO:change
     y_train_meta = np.zeros((dfTrain.shape[0], 1), dtype=float)
     y_test_meta = np.zeros((dfTest.shape[0], 1), dtype=float)
 
     results_cv = np.zeros(len(folds), dtype=float)
-    results_epoch_train = np.zeros((len(folds), pnn_params['epoch']), dtype=float)
-    results_epoch_valid = np.zeros((len(folds), pnn_params['epoch']), dtype=float)
-    results_epoch_train_mae = np.zeros((len(folds), pnn_params['epoch']), dtype=float)
-    results_epoch_valid_mae = np.zeros((len(folds), pnn_params['epoch']), dtype=float)
+    results_epoch_train = np.zeros((len(folds), kdfm_params['epoch']), dtype=float)
+    results_epoch_valid = np.zeros((len(folds), kdfm_params['epoch']), dtype=float)
+    results_epoch_train_mae = np.zeros((len(folds), kdfm_params['epoch']), dtype=float)
+    results_epoch_valid_mae = np.zeros((len(folds), kdfm_params['epoch']), dtype=float)
 
     def _get(x, l): return [x[i] for i in l]
 
@@ -174,7 +174,7 @@ def run_base_model_nfm(dfTrain, dfTest, folds, pnn_params):
             _get(Xi_train, valid_idx), _get(Xv_train, valid_idx), _get(y_train, valid_idx), \
             _get(Xt_train, valid_idx), _get(Xm_train, valid_idx)
 
-        afm = DeepAFM(**pnn_params)
+        kdfm = DeepAFM(**kdfm_params)
         Xim_train_ = []
         Xvm_train_ = []
         Xim_valid_ = []
@@ -183,43 +183,41 @@ def run_base_model_nfm(dfTrain, dfTest, folds, pnn_params):
         Xvm_test = []
 
 
-        afm.fit(Xi_train_, Xv_train_, Xim_train_, Xvm_train_, Xt_train_, y_train_,
+        kdfm.fit(Xi_train_, Xv_train_, Xim_train_, Xvm_train_, Xt_train_, y_train_,
                 Xi_valid_, Xv_valid_, Xim_valid_, Xvm_vaild_, Xt_valid_,y_valid_)
 
-        y_train_meta[valid_idx, 0] = afm.predict(Xi_valid_, Xv_valid_, Xim_valid_, Xvm_vaild_, Xt_valid_)
-        y_test_meta[:, 0] += afm.predict(Xi_test, Xv_test, Xim_test, Xvm_test, Xt_test)
+        y_train_meta[valid_idx, 0] = kdfm.predict(Xi_valid_, Xv_valid_, Xim_valid_, Xvm_vaild_, Xt_valid_)
+        y_test_meta[:, 0] += kdfm.predict(Xi_test, Xv_test, Xim_test, Xvm_test, Xt_test)
 
 
         results_cv[i] = mse_norm(y_valid_, y_train_meta[valid_idx])
-        results_epoch_train[i] = afm.train_result
-        results_epoch_valid[i] = afm.valid_result
+        results_epoch_train[i] = kdfm.train_result
+        results_epoch_valid[i] = kdfm.valid_result
 
-        results_epoch_train_mae[i] = afm.mae_train_result
-        results_epoch_valid_mae[i] = afm.mae_valid_result
+        results_epoch_train_mae[i] = kdfm.mae_train_result
+        results_epoch_valid_mae[i] = kdfm.mae_valid_result
 
     y_test_meta /= float(len(folds))
+    mse_test = mse(y_test, y_test_meta)
 
     # save result
-    if pnn_params["use_afm"] and pnn_params["use_deep"]:
+    if kdfm_params["use_afm"] and kdfm_params["use_deep"]:
         clf_str = "KDFM"
-    elif pnn_params["use_afm"]:
+    elif kdfm_params["use_afm"]:
         clf_str = "AFM"
-    elif pnn_params["use_deep"]:
+    elif kdfm_params["use_deep"]:
         clf_str = "DNN"
     print("%s: %.5f (%.5f)" % (clf_str, results_cv.mean(), results_cv.std()))
     filename = "%s_Mean%.5f_Std%.5f.csv" % (clf_str, results_cv.mean(), results_cv.std())
-    filename1 = "params%s_Mean%.5f_Std%.5f.csv" % (clf_str, results_cv.mean(), results_cv.std())
-    _make_submission(y_test, y_test_meta, filename)
-    _make_pnn_params(pnn_params.keys(), pnn_params.values(), filename1)
-
+    _make_submission(y_test, y_test_meta, mse_test, filename)
     _plot_fig(results_epoch_train, results_epoch_valid, clf_str+'mse', "mse")
     _plot_fig(results_epoch_train_mae, results_epoch_valid_mae, clf_str+'mae', "mae")
 
-def _make_submission(target, y_pred, filename="submission.csv"):
-    pd.DataFrame({"id": range(len(target)), "target": target, "predict": y_pred.flatten()}).to_csv(
+def _make_submission(target, y_pred, mse_test, filename="submission.csv"):
+    pd.DataFrame({"id": range(len(target)), "target": target, "predict": y_pred.flatten(), "mse": mse_test}).to_csv(
         os.path.join(config.SUB_DIR, filename), index=False, float_format="%.5f")
 
-def _make_pnn_params(key, value, filename="pnn_params.csv"):
+def _make_kdfm_params(key, value, filename="kdfm_params.csv"):
     pd.DataFrame({"key": key, "value": value}).to_csv(
         os.path.join(config.SUB_DIR, filename), index=False, float_format="%.5f")
 
@@ -245,7 +243,7 @@ def _plot_fig(train_results, valid_results, model_name, algor):
     plt.close()
 
 # TODO: lack of feature_size & word_embeddings
-pnn_params = {
+kdfm_params = {
     "use_afm": True,
     "use_deep": True,
     #"field_size": 6,
@@ -260,20 +258,20 @@ pnn_params = {
     "dropout_deep": [0.5, 0.5, 0.5, 0.5],
     "deep_layer_activation": tf.nn.relu,
 
-    "epoch": 25,
+    "epoch": 30,
     "batch_size": 128,
     "learning_rate": 0.001,
     "optimizer": "adam",
 
     "random_seed": config.RANDOM_SEED,
-    "l2_reg": 0.2,
+    "l2_reg": 0.1,
 
     "rnn_size": 100,
     "num_rnn_layers": 1,
     "keep_lstm": 0.5,
     "num_unroll_steps": 100,  # 句子长度
     "verbose": True,
-    "topics": 10
+    "topics": 1
 }
 
 
@@ -285,14 +283,14 @@ dfTrain, dfTest, X_train, y_train, X_test, y_test = load_data()
 folds = list(StratifiedKFold(n_splits=config.NUM_SPLITS, shuffle=True,
                              random_state=config.RANDOM_SEED).split(X_train, y_train))
 
-run_base_model_nfm(dfTrain, dfTest, folds, pnn_params)
+run_base_model_nfm(dfTrain, dfTest, folds, kdfm_params)
 
 # ------------------ FM Model ------------------
-afm_params = pnn_params.copy()
-pnn_params["use_deep"] = False
+afm_params = kdfm_params.copy()
+afm_params["use_deep"] = False
 run_base_model_nfm(dfTrain, dfTest, folds, afm_params)
 
 # ------------------ DNN Model ------------------
-# dnn_params = pnn_params.copy()
-# pnn_params["use_afm"] = False
-# run_base_model_nfm(dfTrain, dfTest, folds, dnn_params)
+dnn_params = kdfm_params.copy()
+dnn_params["use_afm"] = False
+run_base_model_nfm(dfTrain, dfTest, folds, dnn_params)

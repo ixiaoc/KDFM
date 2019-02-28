@@ -19,3 +19,10 @@ def mse_norm(actual, pred):
     for i in range(len(actual)):
         se += (actual[i]-pred[i])**2
     return se / len(actual)
+
+def mse(actual, pred):
+    assert (len(actual) == len(pred))
+    se = np.zeros(len(actual), dtype=float)
+    for i in range(len(actual)):
+        se[i] = (actual[i]-pred[i])**2
+    return se

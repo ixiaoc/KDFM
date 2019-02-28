@@ -1,11 +1,7 @@
-# TRAIN_FILE = "data/train_one_train.csv"
-# TEST_FILE = "data/train_one_test.csv"
 TRAIN_FILE = "data/KDFM_train.csv"
 TEST_FILE = "data/KDFM_test.csv"
 embedding_file = "data/word_vectors.txt"
 embedding_size = 80
-train_file = "data/train_two_train.csv"
-test_file = "data/train_two_test.csv"
 word_file = "data/words.txt"
 num_unroll_steps = 100
 
