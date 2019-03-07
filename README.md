@@ -6,7 +6,7 @@ This project includes a Tensorflow implementation of KDFM [1].The preprocessing 
 
 We propose knowledge-based deep factorization machine (KDFM), a recommendation model inspired by techniques of factorization machine and attentive deep learning, and apply it to the recommendation service for mobile apps. The KDFM consists of two typical modules: a factorization machine for fine-grained low-order feature interactions and a deep neural network module for the deep extraction of hybrid types of features. By constructing the context-based topical preprocessing and handling the attention-based deep feature interactions, KDFM is able to make full use of the rich categorical and textual knowledge within app market, including reviews, descriptions, permissions, app name, download times, etc.
 
-# Envirment
+# Enviroment
 
 This code has been tested on Windows 10/64 bit, python environment 3.5.3.
 
@@ -22,7 +22,7 @@ This implementation requires the input data in the following format:
 
 Please see `main.py` and `DataReader.py` an ecample how to prepare the data in required format for KDFM.
 ## Init and train a model
-```
+```python
 import tensorflow as tf
 from metrics import gini_norm, mse_norm, mse
 from KDFM import KDFM
