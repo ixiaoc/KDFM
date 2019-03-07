@@ -19,6 +19,61 @@ This implementation requires the input data in the following format:
     - *vali_j* is the feature value of feature field *j* of sample *i* in the dataset
     - *vali_j* can be either binary (1/0, for binary/categorical features) or float (e.g., 4.1, for numerical features)
 Please see `main.py` and `DataReader.py` an ecample how to prepare the data in required format for KDFM.
+## Init and train a model
+```
+import tensorflow as tf
+from metrics import gini_norm, mse_norm, mse
+from KDFM import KDFM
+
+# params
+kdfm_params = {
+    "use_afm": True,
+    "use_deep": True,
+    "feature_size_one_hot": 1,
+    "field_size_one_hot": 3,
+    "feature_size_multi_value": 0,
+    "field_size_multi_value": 0,
+    "embedding_size": 8,
+    "attention_size": 10,
+
+    "deep_layers": [32, 32, 32],
+    "dropout_deep": [0.5, 0.5, 0.5, 0.5],
+    "deep_layer_activation": tf.nn.relu,
+
+    "epoch": 30,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "optimizer": "adam",
+
+    "random_seed": config.RANDOM_SEED,
+    "l2_reg": 0.1,
+
+    "rnn_size": 100,
+    "num_rnn_layers": 1,
+    "keep_lstm": 0.5,
+    "num_unroll_steps": 100,  # 句子长度
+    "verbose": True,
+    "topics": 1
+}
+
+# prepare training and validation data in the required format
+    Xi_train, Xv_train, y_train = data_parser.parse(...)
+    Xt_train, Xm_train = read_text_data(...)
+    Xi_test, Xv_test, y_test = data_parser.parse(...)
+    Xt_test, Xm_test = read_text_data(...)
+
+# init a KDFM model
+kdfm = KDFM(**kdfm_params)
+
+# fit a KDFM model
+kdfm.fit(Xi_train, Xv_train, Xim_train, Xvm_train, Xt_train, y_train)
+
+# make prediction
+kdfm.predict(Xi_valid, Xv_valid, Xim_valid, Xvm_vaild, Xt_valid)
+
+# evaluate a trained model
+kdfm.evaluate(XXi_valid, Xv_valid, Xim_valid, Xvm_vaild, Xt_valid, y_valid)
+```
 # Example
 Folder `data` includes the data for the KDFM model.
 
