@@ -1,6 +1,6 @@
 # KDFM
 
-This project includes a Tensorflow implementation of KDFM[1].The preprocessing contains three typlical stages:word embedding stage, bi_directional LSTM stage and tipical attention stage.
+This project includes a Tensorflow implementation of KDFM [1].The preprocessing contains three typlical stages:word embedding stage, bi_directional LSTM stage and tipical attention stage.
 
 # Introduction
 
