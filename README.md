@@ -18,6 +18,7 @@ This implementation requires the input data in the following format:
 - [ ] **Xv**: *[[val1_1, val1_2, ...], [val2_1, val2_2, ...], ..., {vali_1, vali_2, ..., vali_j, ...], ...]*
     - *vali_j* is the feature value of feature field *j* of sample *i* in the dataset
     - *vali_j* can be either binary (1/0, for binary/categorical features) or float (e.g., 4.1, for numerical features)
+- [ ] **y**: target of each sample in the dataset (1~5 for classification)
 Please see `main.py` and `DataReader.py` an ecample how to prepare the data in required format for KDFM.
 ## Init and train a model
 ```
