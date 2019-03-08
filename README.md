@@ -20,7 +20,7 @@ The implementation requires the input data in the following format:
     - *vali_j* can be either binary (1/0, for binary/categorical features) or float (e.g., 4.1, for numerical features)
 - [ ] **y**: target of each sample in the dataset (1~5 for classification)
 
-Please see `main.py` and `DataReader.py` an example how to prepare the data in required format for KDFM.
+We use `main.py` and `DataReader.py` to transform the data in required format for KDFM.
 ## Init and train a model
 ```python
 import tensorflow as tf
@@ -84,6 +84,6 @@ To train KDFM model for this dataset, run
 ```
 $ python main.py
 ```
-Please see `main.py` and `DataReader.py` how to parse the raw dataset into the required format for KDFM.
+We use `main.py` and `DataReader.py` to parse the raw dataset into the required format for KDFM.
 You should tune the parameters for each model in order to get reasonable performance.
 
